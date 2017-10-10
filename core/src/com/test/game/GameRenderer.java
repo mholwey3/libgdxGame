@@ -32,6 +32,8 @@ import com.badlogic.gdx.physics.bullet.collision.btDefaultCollisionConfiguration
 import com.badlogic.gdx.physics.bullet.collision.btDispatcher;
 import com.badlogic.gdx.physics.bullet.collision.btDispatcherInfo;
 import com.badlogic.gdx.physics.bullet.collision.btManifoldResult;
+import com.test.game.objects.Block;
+import com.test.game.objects.Player;
 
 public class GameRenderer {
 	private Map map;

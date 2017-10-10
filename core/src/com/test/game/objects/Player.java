@@ -1,4 +1,4 @@
-package com.test.game;
+package com.test.game.objects;
 
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.math.Quaternion;
@@ -7,8 +7,8 @@ import com.badlogic.gdx.physics.bullet.collision.btCollisionObject;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 
 public class Player extends GameObject {
-	static final int ROTATE_CLOCKWISE = -1;
-	static final int ROTATE_COUNTER_CLOCKWISE = 1;
+	public static final int ROTATE_CLOCKWISE = -1;
+	public static final int ROTATE_COUNTER_CLOCKWISE = 1;
 	
 	private Vector3 position;
 	private Quaternion rotation;
