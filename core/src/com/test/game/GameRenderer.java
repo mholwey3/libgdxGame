@@ -3,7 +3,6 @@ package com.test.game;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
@@ -22,20 +21,33 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.Bullet;
 import com.badlogic.gdx.physics.bullet.collision.CollisionObjectWrapper;
+import com.badlogic.gdx.physics.bullet.collision.ContactListener;
 import com.badlogic.gdx.physics.bullet.collision.btBoxShape;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionAlgorithm;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionConfiguration;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionDispatcher;
+import com.badlogic.gdx.physics.bullet.collision.btCollisionObjectWrapper;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 import com.badlogic.gdx.physics.bullet.collision.btConeShape;
 import com.badlogic.gdx.physics.bullet.collision.btDefaultCollisionConfiguration;
 import com.badlogic.gdx.physics.bullet.collision.btDispatcher;
 import com.badlogic.gdx.physics.bullet.collision.btDispatcherInfo;
+import com.badlogic.gdx.physics.bullet.collision.btManifoldPoint;
 import com.badlogic.gdx.physics.bullet.collision.btManifoldResult;
 import com.test.game.objects.Block;
 import com.test.game.objects.Player;
 
 public class GameRenderer {
+	
+	class MyContactListener extends ContactListener {
+		@Override
+		public boolean onContactAdded(btManifoldPoint cp, btCollisionObjectWrapper colObj0Wrap, int partId0, int index0, 
+										btCollisionObjectWrapper colObj1Wrap, int partId1, int index1) {
+			System.out.println("COLLISION");
+			return true;
+		}
+	}
+	
 	private Map map;
 	private Player player;
 	private ModelBuilder builder;
@@ -48,6 +60,7 @@ public class GameRenderer {
 	
 	private btCollisionConfiguration collisionConfig;
 	private btDispatcher dispatcher;
+	private MyContactListener contactListener;
 	
 	private float lerpSpeed;
 	private final float CAMERA_DISTANCE = 10f;
@@ -86,6 +99,7 @@ public class GameRenderer {
 			}
 		}
 		
+		// Background grid for depth ?
 		Material mat = new Material(ColorAttribute.createDiffuse(Color.GREEN));
         Model grid = builder.createLineGrid(250, 250, 1, 1, mat, Usage.Position | Usage.Normal);
         ModelInstance gridInstance = new ModelInstance(grid);
@@ -132,6 +146,7 @@ public class GameRenderer {
 	public void initCollisionHelpers(){
 		collisionConfig = new btDefaultCollisionConfiguration();
         dispatcher = new btCollisionDispatcher(collisionConfig);
+        contactListener = new MyContactListener();
 	}
 	
 	public void initMemberVariables(){
@@ -190,11 +205,6 @@ public class GameRenderer {
 			player.decelerate(delta);
 			player.move(delta);
 		}
-		
-		if(checkCollision()){
-			// Handle collision
-		}
-		
 	}
 
 	/**
@@ -208,38 +218,6 @@ public class GameRenderer {
 		batch.end();
 	}
 	
-	public boolean checkCollision(){
-		CollisionObjectWrapper playerObjectWrapper = new CollisionObjectWrapper(player.getCollisionObject());
-		boolean collisionResult = false;
-		
-		for(Block b : blocks){
-			CollisionObjectWrapper blockObjectWrapper = new CollisionObjectWrapper(b.getCollisionObject());
-			
-			btCollisionAlgorithm algorithm = dispatcher.findAlgorithm(playerObjectWrapper.wrapper, blockObjectWrapper.wrapper);
-			
-			btDispatcherInfo info = new btDispatcherInfo();
-			btManifoldResult result = new btManifoldResult(playerObjectWrapper.wrapper, blockObjectWrapper.wrapper);
-			
-			algorithm.processCollision(playerObjectWrapper.wrapper, blockObjectWrapper.wrapper, info, result);
-			
-			collisionResult = result.getPersistentManifold().getNumContacts() > 0;
-			
-			dispatcher.freeCollisionAlgorithm(algorithm.getCPointer());
-			result.dispose();
-	        info.dispose();
-	        blockObjectWrapper.dispose();
-	        
-	        if(collisionResult){
-	        	break;
-	        }
-		}
-		playerObjectWrapper.dispose();
-		
-//		System.out.println("Collision: " + collisionResult);
-		
-		return collisionResult;
-	}
-	
 	public void dispose() {
 		batch.dispose();
 		
@@ -251,5 +229,6 @@ public class GameRenderer {
 		player.dispose();
 		dispatcher.dispose();
         collisionConfig.dispose();
+        contactListener.dispose();
 	}
 }

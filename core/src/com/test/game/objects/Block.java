@@ -18,6 +18,7 @@ public class Block extends GameObject{
 		
 		collisionObject = new btCollisionObject();
 		collisionObject.setCollisionShape(collisionShape);
+		collisionObject.setCollisionFlags(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
 	}
 
 	public Model getModel() {

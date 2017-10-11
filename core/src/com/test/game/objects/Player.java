@@ -27,6 +27,7 @@ public class Player extends GameObject {
 		
 		collisionObject = new btCollisionObject();
 		collisionObject.setCollisionShape(collisionShape);
+		collisionObject.setCollisionFlags(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
 		
 		acceleration = 5f;
 		movementSpeed = 0f;
