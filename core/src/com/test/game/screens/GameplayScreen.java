@@ -4,12 +4,12 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.test.game.Map;
-import com.test.game.GameRenderer;
+import com.test.game.Gameplay;
 
 public class GameplayScreen extends GenericScreen{
 	
 	private Map map;
-	private GameRenderer renderer;
+	private Gameplay gameplay;
 
 	public GameplayScreen(Game game) {
 		super(game);
@@ -18,7 +18,7 @@ public class GameplayScreen extends GenericScreen{
 	@Override
 	public void show() {
 		map = new Map("./maps/testLevelPixmap.png");
-		renderer = new GameRenderer(map);
+		gameplay = new Gameplay(map);
 	}
 	
 	@Override
@@ -26,11 +26,11 @@ public class GameplayScreen extends GenericScreen{
 		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
         
-		renderer.render(delta);
+		gameplay.render(delta);
 	}
 	
 	@Override
 	public void dispose() {
-		renderer.dispose();
+		gameplay.dispose();
 	}
 }

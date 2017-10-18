@@ -10,9 +10,7 @@ public class Player extends GameObject {
 	public static final int ROTATE_CLOCKWISE = -1;
 	public static final int ROTATE_COUNTER_CLOCKWISE = 1;
 	
-	private Vector3 position;
 	private Quaternion rotation;
-	public btCollisionObject collisionObject;
 	private float acceleration;
 	private float movementSpeed;
 	private float rotationSpeed;
@@ -20,14 +18,10 @@ public class Player extends GameObject {
 	private final float MAX_MOVEMENT_SPEED = 10.0f;
 	public static final float DIAMETER = 0.75f;
 	
-	public Player(Model model, btCollisionShape collisionShape, Vector3 startPos) {
-		super(model, collisionShape, startPos);
+	public Player(Model model, btCollisionShape collisionShape, Vector3 startPos, int userValue) {
+		super(model, collisionShape, startPos, userValue);
 		position = startPos;
 		rotation = new Quaternion();
-		
-		collisionObject = new btCollisionObject();
-		collisionObject.setCollisionShape(collisionShape);
-		collisionObject.setCollisionFlags(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
 		
 		acceleration = 5f;
 		movementSpeed = 0f;
@@ -36,28 +30,12 @@ public class Player extends GameObject {
 	
 	// Begin Getters and Setters
 	
-	public Vector3 getPosition() {
-		return position;
-	}
-	
-	public void setPosition(Vector3 position) {
-		this.position = position;
-	}
-	
 	public Quaternion getRotation() {
 		return rotation;
 	}
 	
 	public void setRotation(Quaternion rotation) {
 		this.rotation = rotation;
-	}
-	
-	public btCollisionObject getCollisionObject() {
-		return collisionObject;
-	}
-
-	public void setCollisionObject(btCollisionObject collisionObject) {
-		this.collisionObject = collisionObject;
 	}
 
 	public float getAcceleration() {

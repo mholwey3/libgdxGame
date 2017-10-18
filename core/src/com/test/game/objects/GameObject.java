@@ -9,16 +9,33 @@ import com.badlogic.gdx.utils.Disposable;
 
 public class GameObject extends ModelInstance implements Disposable{
 	
-	public final btCollisionObject collisionObject;
+	protected final btCollisionObject collisionObject;
 	
-	public Vector3 position;
+	protected Vector3 position;
 	
-	public GameObject(Model model, btCollisionShape collisionShape, Vector3 position){
+	public GameObject(Model model, btCollisionShape collisionShape, Vector3 position, int userValue){
 		super(model, position);
 		collisionObject = new btCollisionObject();
 		collisionObject.setCollisionShape(collisionShape);
 		collisionObject.setWorldTransform(transform);
+		collisionObject.setCollisionFlags(collisionObject.getCollisionFlags() | btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
+		collisionObject.setUserValue(userValue);
 	}
+
+	public btCollisionObject getCollisionObject() {
+		return collisionObject;
+	}
+	
+
+	public Vector3 getPosition() {
+		return position;
+	}
+	
+
+	public void setPosition(Vector3 position) {
+		this.position = position;
+	}
+	
 
 	@Override
 	public void dispose() {
