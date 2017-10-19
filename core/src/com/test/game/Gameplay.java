@@ -123,8 +123,8 @@ public class Gameplay {
 	
 	public void initPlayer(int posX, int posY, int userValue){
 		Material mat = new Material(ColorAttribute.createDiffuse(Color.SKY));
-		Model model = builder.createCone(Player.DIAMETER, Player.DIAMETER, Player.DIAMETER, 100, mat, Usage.Position | Usage.Normal);
-		btCollisionShape collisionShape = new btConeShape(Player.DIAMETER, Player.DIAMETER);
+		Model model = builder.createCone(Player.getDIAMETER(), Player.getDIAMETER(), Player.getDIAMETER(), 100, mat, Usage.Position | Usage.Normal);
+		btCollisionShape collisionShape = new btConeShape(Player.getDIAMETER(), Player.getDIAMETER());
 		Vector3 pos = new Vector3(posX, -posY, 0);
 		player = new Player(model, collisionShape, pos, userValue);
 	}
@@ -193,19 +193,18 @@ public class Gameplay {
 		
 		//ROTATION
 		if(Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-			player.rotate(delta, Player.ROTATE_CLOCKWISE);
+			player.rotate(delta, Player.getROTATE_CLOCKWISE());
 		} else if(Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-			player.rotate(delta, Player.ROTATE_COUNTER_CLOCKWISE);
+			player.rotate(delta, Player.getROTATE_COUNTER_CLOCKWISE());
 		}
 		
 		//MOVEMENT
 		if(Gdx.input.isKeyPressed(Input.Keys.UP)) {
 			player.accelerate(delta);
-			player.move(delta);
 		} else {
 			player.decelerate(delta);
-			player.move(delta);
 		}
+		player.move(delta);
 		
 		for(Block block : blocks) {
 			checkCollision(player.getCollisionObject(), block.getCollisionObject());
