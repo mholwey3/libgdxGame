@@ -98,7 +98,7 @@ public class Player extends GameObject {
 		float x = velocity.x * delta;
 		float y = velocity.y * delta;
 		transform.trn(x, y, 0f);
-		collisionObject.setWorldTransform(transform); // Do I need to do this every frame of movement?
+		collisionObject.setWorldTransform(transform);
 		transform.getTranslation(position);
 		//System.out.println("position: " + position);
 	}

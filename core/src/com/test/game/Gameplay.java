@@ -20,21 +20,17 @@ import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.Bullet;
-import com.badlogic.gdx.physics.bullet.collision.CollisionObjectWrapper;
 import com.badlogic.gdx.physics.bullet.collision.ContactListener;
 import com.badlogic.gdx.physics.bullet.collision.btBoxShape;
-import com.badlogic.gdx.physics.bullet.collision.btCollisionAlgorithm;
+import com.badlogic.gdx.physics.bullet.collision.btBroadphaseInterface;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionConfiguration;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionDispatcher;
-import com.badlogic.gdx.physics.bullet.collision.btCollisionObject;
-import com.badlogic.gdx.physics.bullet.collision.btCollisionObjectWrapper;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
+import com.badlogic.gdx.physics.bullet.collision.btCollisionWorld;
 import com.badlogic.gdx.physics.bullet.collision.btConeShape;
+import com.badlogic.gdx.physics.bullet.collision.btDbvtBroadphase;
 import com.badlogic.gdx.physics.bullet.collision.btDefaultCollisionConfiguration;
 import com.badlogic.gdx.physics.bullet.collision.btDispatcher;
-import com.badlogic.gdx.physics.bullet.collision.btDispatcherInfo;
-import com.badlogic.gdx.physics.bullet.collision.btManifoldPoint;
-import com.badlogic.gdx.physics.bullet.collision.btManifoldResult;
 import com.test.game.objects.Block;
 import com.test.game.objects.Player;
 
@@ -43,7 +39,6 @@ public class Gameplay {
 	class MyContactListener extends ContactListener {
 		@Override
 		public boolean onContactAdded(int userValue0, int partId0, int index0, int userValue1, int partId1, int index1) {
-			System.out.println("COLLISION");
 			return true;
 		}
 	}
@@ -61,19 +56,24 @@ public class Gameplay {
 	private btCollisionConfiguration collisionConfig;
 	private btDispatcher dispatcher;
 	private MyContactListener contactListener;
+	private btBroadphaseInterface broadphase;
+	private btCollisionWorld collisionWorld;
 	
 	private float lerpSpeed;
 	
-	private final float CAMERA_DISTANCE = 10f;
+	private final static float CAMERA_DISTANCE = 10f;
+	private final static short PLAYER_FLAG = 1<<8;
+	private final static short BLOCK_FLAG = 1<<9;
+	private final static short ALL_FLAG = -1;
 	
 	public Gameplay(Map map) {
 		Bullet.init();
 		this.map = map;
 		initRenderingHelpers();
+		initCollisionHelpers();
 		initGameObjects();
         initEnvironment();
         initCamera();
-        initCollisionHelpers();
         initMemberVariables();
 //        initDebuggingTools();
 	}
@@ -117,6 +117,7 @@ public class Gameplay {
 		btCollisionShape collisionShape = new btBoxShape(new Vector3(Block.SIDE_LENGTH / 2, Block.SIDE_LENGTH / 2, Block.SIDE_LENGTH / 2));
 		Vector3 pos = new Vector3(posX, -posY, 0);
 		Block block = new Block(model, collisionShape, pos, userValue);
+		collisionWorld.addCollisionObject(block.getCollisionObject(), BLOCK_FLAG, ALL_FLAG);
 		blocks.add(block);
 		cache.add(block);
 	}
@@ -127,6 +128,7 @@ public class Gameplay {
 		btCollisionShape collisionShape = new btConeShape(Player.getDIAMETER(), Player.getDIAMETER());
 		Vector3 pos = new Vector3(posX, -posY, 0);
 		player = new Player(model, collisionShape, pos, userValue);
+		collisionWorld.addCollisionObject(player.getCollisionObject(), PLAYER_FLAG, BLOCK_FLAG);
 	}
 	
 	public void initEnvironment(){
@@ -150,6 +152,8 @@ public class Gameplay {
         dispatcher = new btCollisionDispatcher(collisionConfig);
         contactListener = new MyContactListener();
         contactListener.enable();
+        broadphase = new btDbvtBroadphase();
+        collisionWorld = new btCollisionWorld(dispatcher, broadphase, collisionConfig);
 	}
 	
 	public void initMemberVariables(){
@@ -172,6 +176,7 @@ public class Gameplay {
 		
 		updatePlayerTransform(delta);
 		renderGameObjects();
+		collisionWorld.performDiscreteCollisionDetection();
 	}
 	
 	/**
@@ -205,10 +210,6 @@ public class Gameplay {
 			player.decelerate(delta);
 		}
 		player.move(delta);
-		
-		for(Block block : blocks) {
-			checkCollision(player.getCollisionObject(), block.getCollisionObject());
-		}
 	}
 
 	/**
@@ -222,28 +223,6 @@ public class Gameplay {
 		batch.end();
 	}
 	
-	boolean checkCollision(btCollisionObject obj0, btCollisionObject obj1) {
-        CollisionObjectWrapper co0 = new CollisionObjectWrapper(obj0);
-        CollisionObjectWrapper co1 = new CollisionObjectWrapper(obj1);
-
-        btCollisionAlgorithm algorithm = dispatcher.findAlgorithm(co0.wrapper, co1.wrapper);
-
-        btDispatcherInfo info = new btDispatcherInfo();
-        btManifoldResult result = new btManifoldResult(co0.wrapper, co1.wrapper);
-
-        algorithm.processCollision(co0.wrapper, co1.wrapper, info, result);
-
-        boolean r = result.getPersistentManifold().getNumContacts() > 0;
-
-        dispatcher.freeCollisionAlgorithm(algorithm.getCPointer());
-        result.dispose();
-        info.dispose();
-        co1.dispose();
-        co0.dispose();
-
-        return r;
-    }
-	
 	public void dispose() {
 		batch.dispose();
 		
@@ -256,5 +235,7 @@ public class Gameplay {
 		dispatcher.dispose();
         collisionConfig.dispose();
         contactListener.dispose();
+        broadphase.dispose();
+        collisionWorld.dispose();
 	}
 }
