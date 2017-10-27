@@ -1,8 +1,5 @@
 package com.test.game;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
@@ -51,7 +48,6 @@ public class Gameplay {
 	private PerspectiveCamera cam;
 	private CameraInputController camController;
 	private Environment environment;
-	private List<Block> blocks;
 	
 	private btCollisionConfiguration collisionConfig;
 	private btDispatcher dispatcher;
@@ -85,7 +81,6 @@ public class Gameplay {
 	}
 	
 	public void initGameObjects() {
-		blocks = new ArrayList<Block>();
 		cache.begin();
 		int userValue = 1;
 		for(int y = 0; y < map.getBlocks()[0].length; y++) {
@@ -117,8 +112,7 @@ public class Gameplay {
 		btCollisionShape collisionShape = new btBoxShape(new Vector3(Block.SIDE_LENGTH / 2, Block.SIDE_LENGTH / 2, Block.SIDE_LENGTH / 2));
 		Vector3 pos = new Vector3(posX, -posY, 0);
 		Block block = new Block(model, collisionShape, pos, userValue);
-		collisionWorld.addCollisionObject(block.getCollisionObject(), BLOCK_FLAG, ALL_FLAG);
-		blocks.add(block);
+		collisionWorld.addCollisionObject(block.getRigidBody(), BLOCK_FLAG, ALL_FLAG);
 		cache.add(block);
 	}
 	
@@ -128,7 +122,7 @@ public class Gameplay {
 		btCollisionShape collisionShape = new btConeShape(Player.getDIAMETER(), Player.getDIAMETER());
 		Vector3 pos = new Vector3(posX, -posY, 0);
 		player = new Player(model, collisionShape, pos, userValue);
-		collisionWorld.addCollisionObject(player.getCollisionObject(), PLAYER_FLAG, BLOCK_FLAG);
+		collisionWorld.addCollisionObject(player.getRigidBody(), PLAYER_FLAG, BLOCK_FLAG);
 	}
 	
 	public void initEnvironment(){
@@ -225,11 +219,6 @@ public class Gameplay {
 	
 	public void dispose() {
 		batch.dispose();
-		
-		for(Block block : blocks) {
-			block.dispose();
-		}
-		
 		cache.dispose();
 		player.dispose();
 		dispatcher.dispose();

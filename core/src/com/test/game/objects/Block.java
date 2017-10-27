@@ -8,17 +8,12 @@ public class Block extends GameObject{
 	
 	public static final int SIDE_LENGTH = 1;
 	
-	public Block(Model model, btCollisionShape collisionShape, Vector3 pos, int userValue) {
-		super(model, collisionShape, pos, userValue);
+	public Block(Model model, btCollisionShape collisionShape, Vector3 pos, float mass) {
+		super(model, collisionShape, pos, mass);
 		position = pos;
 	}
 
 	public Model getModel() {
 		return model;
 	}
-
-	public void dispose() {
-		collisionObject.dispose();
-	}
-	
 }

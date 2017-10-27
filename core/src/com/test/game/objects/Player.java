@@ -19,9 +19,9 @@ public class Player extends GameObject {
 	private final float DECELERATION = 5.0f;
 	private final float ROTATION_SPEED = 200f;
 	
-	public Player(Model model, btCollisionShape collisionShape, Vector3 startPos, int userValue) {
-		super(model, collisionShape, startPos, userValue);
-		position = startPos;
+	public Player(Model model, btCollisionShape collisionShape, Vector3 pos, float mass) {
+		super(model, collisionShape, pos, mass);
+		position = pos;
 		rotation = new Quaternion();
 		velocity = Vector3.Zero;
 	}
@@ -98,7 +98,7 @@ public class Player extends GameObject {
 		float x = velocity.x * delta;
 		float y = velocity.y * delta;
 		transform.trn(x, y, 0f);
-		collisionObject.setWorldTransform(transform);
+		rigidBody.setWorldTransform(transform);
 		transform.getTranslation(position);
 		//System.out.println("position: " + position);
 	}
@@ -112,9 +112,5 @@ public class Player extends GameObject {
 		transform.rotate(Vector3.Z, clockwise * ROTATION_SPEED * delta);
 		transform.getRotation(rotation);
 		//System.out.println("rotation: " + ((int)(rotation.getAngleAround(Vector3.Z) + 90)) % 360);
-	}
-	
-	public void dispose() {
-		collisionObject.dispose();
 	}
 }
