@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody;
 import com.badlogic.gdx.utils.Disposable;
+import com.test.game.collision.GameObjectMotionState;
 
 public class GameObject extends ModelInstance implements Disposable{
 	
@@ -13,6 +14,8 @@ public class GameObject extends ModelInstance implements Disposable{
 	protected Vector3 position;
 	protected final btRigidBody.btRigidBodyConstructionInfo constructionInfo;
 	protected static Vector3 localInertia = new Vector3();
+	
+	protected final GameObjectMotionState motionState;
 	
 	public GameObject(Model model, btCollisionShape collisionShape, Vector3 position, float mass){
 		super(model, position);
@@ -22,7 +25,11 @@ public class GameObject extends ModelInstance implements Disposable{
 			localInertia.set(0, 0, 0);
 		}
 		this.constructionInfo = new btRigidBody.btRigidBodyConstructionInfo(mass, null, collisionShape, localInertia);
+		
+		motionState = new GameObjectMotionState();
+		motionState.setTransform(transform);
 		rigidBody = new btRigidBody(constructionInfo);
+		rigidBody.setMotionState(motionState);
 	}
 
 	public btRigidBody getRigidBody() {
@@ -43,6 +50,7 @@ public class GameObject extends ModelInstance implements Disposable{
 	public void dispose() {
 		rigidBody.dispose();
 		constructionInfo.dispose();
+		motionState.dispose();
 	}
 
 }

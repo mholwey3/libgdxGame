@@ -17,31 +17,25 @@ import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.Bullet;
-import com.badlogic.gdx.physics.bullet.collision.ContactListener;
 import com.badlogic.gdx.physics.bullet.collision.btBoxShape;
 import com.badlogic.gdx.physics.bullet.collision.btBroadphaseInterface;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionConfiguration;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionDispatcher;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
-import com.badlogic.gdx.physics.bullet.collision.btCollisionWorld;
 import com.badlogic.gdx.physics.bullet.collision.btConeShape;
 import com.badlogic.gdx.physics.bullet.collision.btDbvtBroadphase;
 import com.badlogic.gdx.physics.bullet.collision.btDefaultCollisionConfiguration;
 import com.badlogic.gdx.physics.bullet.collision.btDispatcher;
+import com.badlogic.gdx.physics.bullet.dynamics.btConstraintSolver;
+import com.badlogic.gdx.physics.bullet.dynamics.btDiscreteDynamicsWorld;
+import com.badlogic.gdx.physics.bullet.dynamics.btDynamicsWorld;
+import com.badlogic.gdx.physics.bullet.dynamics.btSequentialImpulseConstraintSolver;
+import com.test.game.collision.GameObjectContactListener;
 import com.test.game.objects.Block;
 import com.test.game.objects.Player;
 
 public class Gameplay {
-	
-	class MyContactListener extends ContactListener {
-		@Override
-		public boolean onContactAdded(int userValue0, int partId0, int index0, int userValue1, int partId1, int index1) {
-			return true;
-		}
-	}
-	
 	private Map map;
-	private Player player;
 	private ModelBuilder builder;
 	private ModelCache cache;
 	private ModelBatch batch;
@@ -51,11 +45,15 @@ public class Gameplay {
 	
 	private btCollisionConfiguration collisionConfig;
 	private btDispatcher dispatcher;
-	private MyContactListener contactListener;
 	private btBroadphaseInterface broadphase;
-	private btCollisionWorld collisionWorld;
+	private btConstraintSolver constraintSolver;
+	private btDynamicsWorld dynamicsWorld;
+	
+	private GameObjectContactListener contactListener;
 	
 	private float lerpSpeed;
+	
+	public static Player player;
 	
 	private final static float CAMERA_DISTANCE = 10f;
 	private final static short PLAYER_FLAG = 1<<8;
@@ -112,7 +110,8 @@ public class Gameplay {
 		btCollisionShape collisionShape = new btBoxShape(new Vector3(Block.SIDE_LENGTH / 2, Block.SIDE_LENGTH / 2, Block.SIDE_LENGTH / 2));
 		Vector3 pos = new Vector3(posX, -posY, 0);
 		Block block = new Block(model, collisionShape, pos, userValue);
-		collisionWorld.addCollisionObject(block.getRigidBody(), BLOCK_FLAG, ALL_FLAG);
+		block.getRigidBody().proceedToTransform(block.transform);
+		dynamicsWorld.addRigidBody(block.getRigidBody(), BLOCK_FLAG, ALL_FLAG);
 		cache.add(block);
 	}
 	
@@ -122,7 +121,8 @@ public class Gameplay {
 		btCollisionShape collisionShape = new btConeShape(Player.getDIAMETER(), Player.getDIAMETER());
 		Vector3 pos = new Vector3(posX, -posY, 0);
 		player = new Player(model, collisionShape, pos, userValue);
-		collisionWorld.addCollisionObject(player.getRigidBody(), PLAYER_FLAG, BLOCK_FLAG);
+		player.getRigidBody().proceedToTransform(player.transform);
+		dynamicsWorld.addRigidBody(player.getRigidBody(), PLAYER_FLAG, BLOCK_FLAG);
 	}
 	
 	public void initEnvironment(){
@@ -144,10 +144,13 @@ public class Gameplay {
 	public void initCollisionHelpers(){
 		collisionConfig = new btDefaultCollisionConfiguration();
         dispatcher = new btCollisionDispatcher(collisionConfig);
-        contactListener = new MyContactListener();
-        contactListener.enable();
         broadphase = new btDbvtBroadphase();
-        collisionWorld = new btCollisionWorld(dispatcher, broadphase, collisionConfig);
+        constraintSolver = new btSequentialImpulseConstraintSolver();
+        dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, constraintSolver, collisionConfig);
+        dynamicsWorld.setGravity(Vector3.Zero);
+        
+        contactListener = new GameObjectContactListener();
+        contactListener.enable();
 	}
 	
 	public void initMemberVariables(){
@@ -170,7 +173,7 @@ public class Gameplay {
 		
 		updatePlayerTransform(delta);
 		renderGameObjects();
-		collisionWorld.performDiscreteCollisionDetection();
+		dynamicsWorld.stepSimulation(delta, 5, 1f/60f);
 	}
 	
 	/**
@@ -220,11 +223,15 @@ public class Gameplay {
 	public void dispose() {
 		batch.dispose();
 		cache.dispose();
+		
 		player.dispose();
+		
 		dispatcher.dispose();
         collisionConfig.dispose();
-        contactListener.dispose();
         broadphase.dispose();
-        collisionWorld.dispose();
+        constraintSolver.dispose();
+        dynamicsWorld.dispose();
+        
+        contactListener.dispose();
 	}
 }

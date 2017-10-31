@@ -98,7 +98,6 @@ public class Player extends GameObject {
 		float x = velocity.x * delta;
 		float y = velocity.y * delta;
 		transform.trn(x, y, 0f);
-		rigidBody.setWorldTransform(transform);
 		transform.getTranslation(position);
 		//System.out.println("position: " + position);
 	}
