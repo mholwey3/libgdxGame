@@ -95,7 +95,7 @@ public class Gameplay {
 				float posX = x * Block.SIDE_LENGTH;
 				float posY = y * Block.SIDE_LENGTH;
 				if(map.getBlocks()[x][y] == Map.BLOCK) {
-					initBlockAndAddToCache(new Vector3(posX, -posY, 0f), 1f);
+					initBlockAndAddToCache(new Vector3(posX, -posY, 0f), 0f);
 				} else if(map.getBlocks()[x][y] == Map.SPAWN) {
 					initPlayer(new Vector3(posX, -posY, 0f), 1f);
 				}
@@ -116,10 +116,7 @@ public class Gameplay {
 		Model model = builder.createBox(Block.SIDE_LENGTH, Block.SIDE_LENGTH, Block.SIDE_LENGTH, mat, Usage.Position | Usage.Normal);
 		btCollisionShape collisionShape = new btBoxShape(new Vector3(Block.SIDE_LENGTH / 2f, Block.SIDE_LENGTH / 2f, Block.SIDE_LENGTH / 2f));
 		Block block = new Block(model, collisionShape, pos, mass);
-		block.getRigidBody().setCollisionFlags(block.getRigidBody().getCollisionFlags() | btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
 		dynamicsWorld.addRigidBody(block.getRigidBody(), BLOCK_FLAG, ALL_FLAG);
-		block.getRigidBody().setContactCallbackFlag(BLOCK_FLAG);
-		block.getRigidBody().setContactCallbackFilter(0);
 		instances.add(block);
 	}
 	
@@ -130,10 +127,8 @@ public class Gameplay {
 		player = new Player(model, collisionShape, pos, mass);
 		player.getRigidBody().proceedToTransform(player.transform);
 		player.getRigidBody().setUserValue(0);
-		player.getRigidBody().setCollisionFlags(player.getRigidBody().getCollisionFlags() | btCollisionObject.CollisionFlags.CF_KINEMATIC_OBJECT);
+		player.getRigidBody().setCollisionFlags(player.getRigidBody().getCollisionFlags() | btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
 		dynamicsWorld.addRigidBody(player.getRigidBody(), PLAYER_FLAG, BLOCK_FLAG);
-		player.getRigidBody().setContactCallbackFlag(PLAYER_FLAG);
-		player.getRigidBody().setContactCallbackFilter(BLOCK_FLAG);
 		instances.add(player);
 	}
 	

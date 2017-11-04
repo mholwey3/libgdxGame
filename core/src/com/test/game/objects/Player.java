@@ -95,6 +95,9 @@ public class Player extends GameObject {
 		float subX = normalizeVelocity.x * DECELERATION * delta;
 		float subY = normalizeVelocity.y * DECELERATION * delta;
 		velocity.sub(subX, subY, 0f);
+		if(velocity.len() < .01f) {
+			velocity.set(0f, 0f, 0f);
+		}
 	}
 	
 	/**
@@ -110,7 +113,9 @@ public class Player extends GameObject {
 		transform.trn(x, y, 0f);
 		transform.getTranslation(position);
 		rigidBody.setWorldTransform(transform);
-		Gameplay.dynamicsWorld.stepSimulation(delta, 5, 1f/60f);
+		if(velocity.len() > 0) {
+			rigidBody.activate();
+		}
 		//System.out.println("position: " + position);
 	}
 	
@@ -123,7 +128,6 @@ public class Player extends GameObject {
 		transform.rotate(Vector3.Z, clockwise * ROTATION_SPEED * delta);
 		transform.getRotation(rotation);
 		rigidBody.setWorldTransform(transform);
-		Gameplay.dynamicsWorld.stepSimulation(delta, 5, 1f/60f);
 		//System.out.println("rotation: " + ((int)(rotation.getAngleAround(Vector3.Z) + 90)) % 360);
 	}
 }
