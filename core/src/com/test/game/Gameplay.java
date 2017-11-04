@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
-import com.badlogic.gdx.graphics.g3d.ModelCache;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
@@ -21,6 +20,7 @@ import com.badlogic.gdx.physics.bullet.collision.btBoxShape;
 import com.badlogic.gdx.physics.bullet.collision.btBroadphaseInterface;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionConfiguration;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionDispatcher;
+import com.badlogic.gdx.physics.bullet.collision.btCollisionObject;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 import com.badlogic.gdx.physics.bullet.collision.btConeShape;
 import com.badlogic.gdx.physics.bullet.collision.btDbvtBroadphase;
@@ -30,6 +30,7 @@ import com.badlogic.gdx.physics.bullet.dynamics.btConstraintSolver;
 import com.badlogic.gdx.physics.bullet.dynamics.btDiscreteDynamicsWorld;
 import com.badlogic.gdx.physics.bullet.dynamics.btDynamicsWorld;
 import com.badlogic.gdx.physics.bullet.dynamics.btSequentialImpulseConstraintSolver;
+import com.badlogic.gdx.utils.Array;
 import com.test.game.collision.GameObjectContactListener;
 import com.test.game.objects.Block;
 import com.test.game.objects.Player;
@@ -37,7 +38,7 @@ import com.test.game.objects.Player;
 public class Gameplay {
 	private Map map;
 	private ModelBuilder builder;
-	private ModelCache cache;
+	private Array<ModelInstance> instances;
 	private ModelBatch batch;
 	private PerspectiveCamera cam;
 	private CameraInputController camController;
@@ -47,13 +48,13 @@ public class Gameplay {
 	private btDispatcher dispatcher;
 	private btBroadphaseInterface broadphase;
 	private btConstraintSolver constraintSolver;
-	private btDynamicsWorld dynamicsWorld;
 	
 	private GameObjectContactListener contactListener;
 	
 	private float lerpSpeed;
 	
 	public static Player player;
+	public static btDynamicsWorld dynamicsWorld;
 	
 	private final static float CAMERA_DISTANCE = 10f;
 	private final static short PLAYER_FLAG = 1<<8;
@@ -74,22 +75,29 @@ public class Gameplay {
 	
 	public void initRenderingHelpers(){
 		builder = new ModelBuilder();
-		cache = new ModelCache();
+		instances = new Array<ModelInstance>();
 		batch = new ModelBatch();
 	}
 	
+	public void initCollisionHelpers(){
+		collisionConfig = new btDefaultCollisionConfiguration();
+        dispatcher = new btCollisionDispatcher(collisionConfig);
+        broadphase = new btDbvtBroadphase();
+        constraintSolver = new btSequentialImpulseConstraintSolver();
+        dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, constraintSolver, collisionConfig);
+        dynamicsWorld.setGravity(new Vector3(0f, 0f, 0f));
+        contactListener = new GameObjectContactListener();
+	}
+	
 	public void initGameObjects() {
-		cache.begin();
-		int userValue = 1;
 		for(int y = 0; y < map.getBlocks()[0].length; y++) {
 			for(int x = 0; x < map.getBlocks().length; x++) {
-				int posX = x * Block.SIDE_LENGTH;
-				int posY = y * Block.SIDE_LENGTH;
+				float posX = x * Block.SIDE_LENGTH;
+				float posY = y * Block.SIDE_LENGTH;
 				if(map.getBlocks()[x][y] == Map.BLOCK) {
-					initBlockAndAddToCache(posX, posY, userValue);
-					userValue++;
+					initBlockAndAddToCache(new Vector3(posX, -posY, 0f), 1f);
 				} else if(map.getBlocks()[x][y] == Map.SPAWN) {
-					initPlayer(posX, posY, 0);
+					initPlayer(new Vector3(posX, -posY, 0f), 1f);
 				}
 			}
 		}
@@ -100,29 +108,33 @@ public class Gameplay {
         ModelInstance gridInstance = new ModelInstance(grid);
         gridInstance.transform.rotate(Vector3.X, 90);
         gridInstance.transform.translate(0, -3, 0);
-        cache.add(gridInstance);
-		cache.end();
+        instances.add(gridInstance);
 	}
 	
-	public void initBlockAndAddToCache(int posX, int posY, int userValue){
+	public void initBlockAndAddToCache(Vector3 pos, float mass){
 		Material mat = new Material(ColorAttribute.createDiffuse(Color.RED));
 		Model model = builder.createBox(Block.SIDE_LENGTH, Block.SIDE_LENGTH, Block.SIDE_LENGTH, mat, Usage.Position | Usage.Normal);
-		btCollisionShape collisionShape = new btBoxShape(new Vector3(Block.SIDE_LENGTH / 2, Block.SIDE_LENGTH / 2, Block.SIDE_LENGTH / 2));
-		Vector3 pos = new Vector3(posX, -posY, 0);
-		Block block = new Block(model, collisionShape, pos, userValue);
-		block.getRigidBody().proceedToTransform(block.transform);
+		btCollisionShape collisionShape = new btBoxShape(new Vector3(Block.SIDE_LENGTH / 2f, Block.SIDE_LENGTH / 2f, Block.SIDE_LENGTH / 2f));
+		Block block = new Block(model, collisionShape, pos, mass);
+		block.getRigidBody().setCollisionFlags(block.getRigidBody().getCollisionFlags() | btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
 		dynamicsWorld.addRigidBody(block.getRigidBody(), BLOCK_FLAG, ALL_FLAG);
-		cache.add(block);
+		block.getRigidBody().setContactCallbackFlag(BLOCK_FLAG);
+		block.getRigidBody().setContactCallbackFilter(0);
+		instances.add(block);
 	}
 	
-	public void initPlayer(int posX, int posY, int userValue){
+	public void initPlayer(Vector3 pos, float mass){
 		Material mat = new Material(ColorAttribute.createDiffuse(Color.SKY));
-		Model model = builder.createCone(Player.getDIAMETER(), Player.getDIAMETER(), Player.getDIAMETER(), 100, mat, Usage.Position | Usage.Normal);
-		btCollisionShape collisionShape = new btConeShape(Player.getDIAMETER(), Player.getDIAMETER());
-		Vector3 pos = new Vector3(posX, -posY, 0);
-		player = new Player(model, collisionShape, pos, userValue);
+		Model model = builder.createCone(Player.getWidth(), Player.getHeight(), Player.getDepth(), 100, mat, Usage.Position | Usage.Normal);
+		btCollisionShape collisionShape = new btConeShape(Player.getWidth() / 2f, Player.getHeight());
+		player = new Player(model, collisionShape, pos, mass);
 		player.getRigidBody().proceedToTransform(player.transform);
+		player.getRigidBody().setUserValue(0);
+		player.getRigidBody().setCollisionFlags(player.getRigidBody().getCollisionFlags() | btCollisionObject.CollisionFlags.CF_KINEMATIC_OBJECT);
 		dynamicsWorld.addRigidBody(player.getRigidBody(), PLAYER_FLAG, BLOCK_FLAG);
+		player.getRigidBody().setContactCallbackFlag(PLAYER_FLAG);
+		player.getRigidBody().setContactCallbackFilter(BLOCK_FLAG);
+		instances.add(player);
 	}
 	
 	public void initEnvironment(){
@@ -135,22 +147,9 @@ public class Gameplay {
 	public void initCamera(){
 		cam = new PerspectiveCamera(67, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		cam.position.set(player.getPosition().x, player.getPosition().y, player.getPosition().z + CAMERA_DISTANCE);
-//		cam.position.set(0, 0, CAMERA_DISTANCE);
 		cam.near = .1f;
         cam.far = 1500f;
         cam.update();
-	}
-	
-	public void initCollisionHelpers(){
-		collisionConfig = new btDefaultCollisionConfiguration();
-        dispatcher = new btCollisionDispatcher(collisionConfig);
-        broadphase = new btDbvtBroadphase();
-        constraintSolver = new btSequentialImpulseConstraintSolver();
-        dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, constraintSolver, collisionConfig);
-        dynamicsWorld.setGravity(Vector3.Zero);
-        
-        contactListener = new GameObjectContactListener();
-        contactListener.enable();
 	}
 	
 	public void initMemberVariables(){
@@ -170,10 +169,8 @@ public class Gameplay {
 		
 		//For free movement in the game world (for debugging only)
 //		camController.update();
-		
 		updatePlayerTransform(delta);
 		renderGameObjects();
-		dynamicsWorld.stepSimulation(delta, 5, 1f/60f);
 	}
 	
 	/**
@@ -207,6 +204,8 @@ public class Gameplay {
 			player.decelerate(delta);
 		}
 		player.move(delta);
+		
+		dynamicsWorld.stepSimulation(delta, 5, 1f/60f);
 	}
 
 	/**
@@ -214,15 +213,12 @@ public class Gameplay {
 	 */
 	public void renderGameObjects() {
 		batch.begin(cam);
-		//Render the map
-		batch.render(cache, environment);
-		batch.render(player);
+		batch.render(instances, environment);
 		batch.end();
 	}
 	
 	public void dispose() {
 		batch.dispose();
-		cache.dispose();
 		
 		player.dispose();
 		

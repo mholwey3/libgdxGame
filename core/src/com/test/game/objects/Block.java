@@ -6,7 +6,7 @@ import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 
 public class Block extends GameObject{
 	
-	public static final int SIDE_LENGTH = 1;
+	public static final float SIDE_LENGTH = 1f;
 	
 	public Block(Model model, btCollisionShape collisionShape, Vector3 pos, float mass) {
 		super(model, collisionShape, pos, mass);

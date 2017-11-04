@@ -10,6 +10,8 @@ import com.test.game.collision.GameObjectMotionState;
 
 public class GameObject extends ModelInstance implements Disposable{
 	
+	protected final Model model;
+	protected final btCollisionShape collisionShape;
 	protected final btRigidBody rigidBody;	
 	protected Vector3 position;
 	protected final btRigidBody.btRigidBodyConstructionInfo constructionInfo;
@@ -19,12 +21,15 @@ public class GameObject extends ModelInstance implements Disposable{
 	
 	public GameObject(Model model, btCollisionShape collisionShape, Vector3 position, float mass){
 		super(model, position);
+		this.model = model;
+		this.collisionShape = collisionShape;
+		this.position = position;
 		if(mass > 0f) {
 			collisionShape.calculateLocalInertia(mass, localInertia);
 		} else {
 			localInertia.set(0, 0, 0);
 		}
-		this.constructionInfo = new btRigidBody.btRigidBodyConstructionInfo(mass, null, collisionShape, localInertia);
+		constructionInfo = new btRigidBody.btRigidBodyConstructionInfo(mass, null, collisionShape, localInertia);
 		
 		motionState = new GameObjectMotionState();
 		motionState.setTransform(transform);
@@ -35,12 +40,10 @@ public class GameObject extends ModelInstance implements Disposable{
 	public btRigidBody getRigidBody() {
 		return rigidBody;
 	}
-	
 
 	public Vector3 getPosition() {
 		return position;
 	}
-	
 
 	public void setPosition(Vector3 position) {
 		this.position = position;
@@ -48,9 +51,9 @@ public class GameObject extends ModelInstance implements Disposable{
 
 	@Override
 	public void dispose() {
+		collisionShape.dispose();
 		rigidBody.dispose();
 		constructionInfo.dispose();
 		motionState.dispose();
 	}
-
 }
